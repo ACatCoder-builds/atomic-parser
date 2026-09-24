@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 description = "A rust crate to parse a file made up of atoms"
 repository = "https://github.com/ACatCoder-builds/atomic-parser"
+documentation = "https://acatcoder-builds.github.io/web/docs/atomic_parser/atomic_parser/index.html"
 license = "Apache 2.0"
 keywords = ["atoms", "file", "parser"]
 categories = ["parsing"]
