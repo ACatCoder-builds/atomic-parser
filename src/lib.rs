@@ -1,5 +1,7 @@
 //! A crate to parse files using atoms.
 //!
+//! # What is an atom?
+//!
 //! _Atoms_ are a way for a file to store data.
 //! A file like this can be represented as a
 //! (real-life) folder with pieces of paper.
@@ -14,6 +16,17 @@
 //! You can find John Doe's paper in the folder,
 //! no matter the order or what other papers there
 //! are.
+//! In files, atoms are made up of 3 parts:
+//! ```text
+//! size
+//! name
+//! payload
+//! ```
+//! The name is the paper title, payload is
+//! what is written on the paper. Size is the
+//! size of the atom, so the parser knows where
+//! each atom ends and a new atom begins.
+//!
 //! An example of a file format that works like this is MP4. Note that
 //! this parser is not recommended for parsing mp4.
 //!
@@ -25,7 +38,7 @@
 //! use atomic_parser::Atom;
 //!
 //! let mut file = File::open("input.hex")?;
-//! let mut value = vec![];    
+//! let mut value = vec![];
 //! file.read_to_end(&mut value)?;
 //! println!("{:?}", Atom::parse(&value, &[])?);
 //! Ok(())
@@ -62,7 +75,7 @@ impl Atom {
     ///
     /// Uses the syntax
     /// ```text
-    /// 4 bytes size 
+    /// 4 bytes size
     /// 4 bytes name
     /// size bytes payload
     /// ```
@@ -77,73 +90,77 @@ impl Atom {
     ///
     /// Each atom payload can only be 4 GB large (minus 1 byte), as the payload size
     /// is stored as a 32-bit unsigned integer.
+    ///
+    /// The size field is the size of the _payload_, not the atom. This means, that,
+    /// for an atom whose payload is size 8, the size would be written as 8,
+    /// not 16 (size field + name + payload).
     pub fn parse(input: &[u8], skips: &[[u8; 4]]) -> Result<Vec<Self>, AtomError> {
-	
-	let mut cursor = 0;
-	let mut atoms = vec![];
+
+        let mut cursor = 0;
+        let mut atoms = vec![];
 
 
-	//let mut i = 0; // For debugging
-	loop {
-	    //i += 1; // For debugging
-	    
-	    if input.is_empty() {
-			return Ok(vec![]);
-	    }
+        //let mut i = 0; // For debugging
+        loop {
+            //i += 1; // For debugging
 
-	    if input.len() - cursor == 0 {
-			break;
-	    }
-	    
-	    if input.len() - cursor < 8 {
-			return Err(AtomError {
-				idx: cursor,
-				kind: AtomErrorKind::MalformedAtom,
-			})
-	    }
-	    let size = u32::from_be_bytes(input[cursor..cursor + 4].try_into().unwrap());
-	    let atype: [u8; 4] = input[cursor + 4..cursor + 8].try_into().unwrap();
+            if input.is_empty() {
+                return Ok(vec![]);
+            }
+
+            if input.len() - cursor == 0 {
+                break;
+            }
+
+            if input.len() - cursor < 8 {
+                return Err(AtomError {
+                    idx: cursor,
+                    kind: AtomErrorKind::MalformedAtom,
+                })
+            }
+            let size = u32::from_be_bytes(input[cursor..cursor + 4].try_into().unwrap());
+            let atype: [u8; 4] = input[cursor + 4..cursor + 8].try_into().unwrap();
 
 
-	    if input.len() - cursor < 8 + size as usize {
-			return Err(AtomError {
-				idx: cursor,
-				kind: AtomErrorKind::MalformedAtom,
-			})
-	    }
+            if input.len() - cursor < 8 + size as usize {
+                return Err(AtomError {
+                    idx: cursor,
+                    kind: AtomErrorKind::MalformedAtom,
+                })
+            }
 
-	    if size == 0 {
-			atoms.push(Atom {
-				name: atype,
-				payload: vec![],
-			});
-			cursor += 8;
-			continue;
-	    }
-	    
-	    let contents = &input[cursor + 8..cursor + 8 + size as usize];
+            if size == 0 {
+                atoms.push(Atom {
+                    name: atype,
+                    payload: vec![],
+                });
+                cursor += 8;
+                continue;
+            }
 
-	    // ignore skip atoms.
-	    if skips.contains(&atype) {
-			cursor += (8 + size) as usize;
-			continue;
-	    }
+            let contents = &input[cursor + 8..cursor + 8 + size as usize];
 
-	    atoms.push(Atom {
-			name: atype,
-			payload: contents.to_vec(),
-	    });
-	    
-	    if input.len() - (cursor + size as usize + 8) == 0 {
-			break;
-	    }
-	    
-	    cursor += (8 + size) as usize;
-	}
+            // ignore skip atoms.
+            if skips.contains(&atype) {
+                cursor += (8 + size) as usize;
+                continue;
+            }
 
-	
-	
-	Ok(atoms)
+            atoms.push(Atom {
+                name: atype,
+                payload: contents.to_vec(),
+            });
+
+            if input.len() - (cursor + size as usize + 8) == 0 {
+                break;
+            }
+
+            cursor += (8 + size) as usize;
+        }
+
+
+
+        Ok(atoms)
     }
 }
 
@@ -154,307 +171,307 @@ mod test {
 
     #[test]
     fn one_atom() {
-		let input = &[
-			0x00, 0x00, 0x00, 0x04,
-			b'a', b't', b'o', b'm',
-			0x01, 0x02, 0x03, 0x04,
-		];
+        let input = &[
+            0x00, 0x00, 0x00, 0x04,
+            b'a', b't', b'o', b'm',
+            0x01, 0x02, 0x03, 0x04,
+        ];
 
-		let expected = vec![
-			Atom {
-				name: [b'a', b't', b'o', b'm'],
-				payload: vec![
-					0x01, 0x02, 0x03, 0x04,
-				],
-			},
-		];
-	
-		assert_eq!(expected, Atom::parse(input, &[[b's', b'k', b'i', b'p']]).unwrap());
+        let expected = vec![
+            Atom {
+                name: [b'a', b't', b'o', b'm'],
+                payload: vec![
+                    0x01, 0x02, 0x03, 0x04,
+                ],
+            },
+        ];
+
+        assert_eq!(expected, Atom::parse(input, &[[b's', b'k', b'i', b'p']]).unwrap());
     }
-    
-    
+
+
     #[test]
     fn few_atoms() {
-		let input = &[
-			0x00, 0x00, 0x00, 0x04,
-			b'a', b't', b'0', b'1',
-			0x01, 0x02, 0x03, 0x04,
-	    
-			0x00, 0x00, 0x00, 0x08,
-			b'a', b't', b'0', b'2',
-			0x11, 0x12, 0x13, 0x14,
-			0x15, 0x16, 0x17, 0x18,
-	    
-			0x00, 0x00, 0x00, 0x0C,
-			b'a', b't', b'0', b'3',
-			0x21, 0x22, 0x23, 0x24,
-			0x25, 0x26, 0x27, 0x28,
-			0x29, 0x2A, 0x2B, 0x2C,
-		];
+        let input = &[
+            0x00, 0x00, 0x00, 0x04,
+            b'a', b't', b'0', b'1',
+            0x01, 0x02, 0x03, 0x04,
 
-		let expected = vec![
-			Atom {
-				name: [b'a', b't', b'0', b'1'],
-				payload: vec![
-					0x01, 0x02, 0x03, 0x04,
-				],
-			},
-			Atom {
-				name: [b'a', b't', b'0', b'2'],
-				payload: vec![
-					0x11, 0x12, 0x13, 0x14,
-					0x15, 0x16, 0x17, 0x18,
-				],
-			},
-			Atom {
-				name: [b'a', b't', b'0', b'3'],
-				payload: vec![
-					0x21, 0x22, 0x23, 0x24,
-					0x25, 0x26, 0x27, 0x28,
-					0x29, 0x2A, 0x2B, 0x2C,
-				],
-			},
-		];
-	
-		assert_eq!(expected, Atom::parse(input, &[[b's', b'k', b'i', b'p']]).unwrap());
+            0x00, 0x00, 0x00, 0x08,
+            b'a', b't', b'0', b'2',
+            0x11, 0x12, 0x13, 0x14,
+            0x15, 0x16, 0x17, 0x18,
+
+            0x00, 0x00, 0x00, 0x0C,
+            b'a', b't', b'0', b'3',
+            0x21, 0x22, 0x23, 0x24,
+            0x25, 0x26, 0x27, 0x28,
+            0x29, 0x2A, 0x2B, 0x2C,
+        ];
+
+        let expected = vec![
+            Atom {
+                name: [b'a', b't', b'0', b'1'],
+                payload: vec![
+                    0x01, 0x02, 0x03, 0x04,
+                ],
+            },
+            Atom {
+                name: [b'a', b't', b'0', b'2'],
+                payload: vec![
+                    0x11, 0x12, 0x13, 0x14,
+                    0x15, 0x16, 0x17, 0x18,
+                ],
+            },
+            Atom {
+                name: [b'a', b't', b'0', b'3'],
+                payload: vec![
+                    0x21, 0x22, 0x23, 0x24,
+                    0x25, 0x26, 0x27, 0x28,
+                    0x29, 0x2A, 0x2B, 0x2C,
+                ],
+            },
+        ];
+
+        assert_eq!(expected, Atom::parse(input, &[[b's', b'k', b'i', b'p']]).unwrap());
     }
 
     #[test]
     fn no_atoms() {
-		let input = &[];
-		let expected: Vec<Atom> = vec![];
-		assert_eq!(expected, Atom::parse(input, &[[b's', b'k', b'i', b'p']]).unwrap());
+        let input = &[];
+        let expected: Vec<Atom> = vec![];
+        assert_eq!(expected, Atom::parse(input, &[[b's', b'k', b'i', b'p']]).unwrap());
     }
-    
+
     #[test]
     fn skip_test() {
-		let input = &[
-			0x00, 0x00, 0x00, 0x04,
-			b'a', b't', b'0', b'1',
-			0x01, 0x02, 0x03, 0x04,
-	    
-			0x00, 0x00, 0x00, 0x08,
-			b'a', b't', b'0', b'2',
-			0x11, 0x12, 0x13, 0x14,
-			0x15, 0x16, 0x17, 0x18,
-	    
-			0x00, 0x00, 0x00, 0x0C,
-			b'a', b't', b'0', b'3',
-			0x21, 0x22, 0x23, 0x24,
-			0x25, 0x26, 0x27, 0x28,
-			0x29, 0x2A, 0x2B, 0x2C,
+        let input = &[
+            0x00, 0x00, 0x00, 0x04,
+            b'a', b't', b'0', b'1',
+            0x01, 0x02, 0x03, 0x04,
 
-			0x00, 0x00, 0x00, 0x06,
-			b's', b'k', b'i', b'p',
-			0x0A, 0x0B, 0x0C, 0x0D,
-			0x0E, 0x0F
-		];
+            0x00, 0x00, 0x00, 0x08,
+            b'a', b't', b'0', b'2',
+            0x11, 0x12, 0x13, 0x14,
+            0x15, 0x16, 0x17, 0x18,
 
-		let expected = vec![
-			Atom {
-				name: [b'a', b't', b'0', b'1'],
-				payload: vec![
-					0x01, 0x02, 0x03, 0x04,
-				],
-			},
-			Atom {
-				name: [b'a', b't', b'0', b'2'],
-				payload: vec![
-					0x11, 0x12, 0x13, 0x14,
-					0x15, 0x16, 0x17, 0x18,
-				],
-			},
-			Atom {
-				name: [b'a', b't', b'0', b'3'],
-				payload: vec![
-					0x21, 0x22, 0x23, 0x24,
-					0x25, 0x26, 0x27, 0x28,
-					0x29, 0x2A, 0x2B, 0x2C,
-				],
-			},
-		];
+            0x00, 0x00, 0x00, 0x0C,
+            b'a', b't', b'0', b'3',
+            0x21, 0x22, 0x23, 0x24,
+            0x25, 0x26, 0x27, 0x28,
+            0x29, 0x2A, 0x2B, 0x2C,
 
-		assert_eq!(expected, Atom::parse(input, &[[b's', b'k', b'i', b'p']]).unwrap());
+            0x00, 0x00, 0x00, 0x06,
+            b's', b'k', b'i', b'p',
+            0x0A, 0x0B, 0x0C, 0x0D,
+            0x0E, 0x0F
+        ];
+
+        let expected = vec![
+            Atom {
+                name: [b'a', b't', b'0', b'1'],
+                payload: vec![
+                    0x01, 0x02, 0x03, 0x04,
+                ],
+            },
+            Atom {
+                name: [b'a', b't', b'0', b'2'],
+                payload: vec![
+                    0x11, 0x12, 0x13, 0x14,
+                    0x15, 0x16, 0x17, 0x18,
+                ],
+            },
+            Atom {
+                name: [b'a', b't', b'0', b'3'],
+                payload: vec![
+                    0x21, 0x22, 0x23, 0x24,
+                    0x25, 0x26, 0x27, 0x28,
+                    0x29, 0x2A, 0x2B, 0x2C,
+                ],
+            },
+        ];
+
+        assert_eq!(expected, Atom::parse(input, &[[b's', b'k', b'i', b'p']]).unwrap());
     }
 
     #[test]
     fn malformed_atom() {
-		let input = &[
-			0x00, 0x00, 0x03,
-			b'a', b't', b'o', b'm',
-			0x01, 0x02, 0x03
-		];
+        let input = &[
+            0x00, 0x00, 0x03,
+            b'a', b't', b'o', b'm',
+            0x01, 0x02, 0x03
+        ];
 
-		assert!(Atom::parse(input, &[[b's', b'k', b'i', b'p']]).is_err());
+        assert!(Atom::parse(input, &[[b's', b'k', b'i', b'p']]).is_err());
     }
-    
+
     #[test]
     fn one_skip() {
-		let input = &[
-			0x00, 0x00, 0x00, 0x04,
-			b's', b'k', b'i', b'p',
-			0x01, 0x02, 0x03, 0x04,
-		];
+        let input = &[
+            0x00, 0x00, 0x00, 0x04,
+            b's', b'k', b'i', b'p',
+            0x01, 0x02, 0x03, 0x04,
+        ];
 
-		let expected: Vec<Atom> = vec![];
+        let expected: Vec<Atom> = vec![];
 
-		assert_eq!(expected, Atom::parse(input, &[[b's', b'k', b'i', b'p']]).unwrap());
+        assert_eq!(expected, Atom::parse(input, &[[b's', b'k', b'i', b'p']]).unwrap());
     }
 
     #[test]
     fn no_payload() {
-		let input = &[
-			0x00, 0x00, 0x00, 0x00,
-			b'a', b't', b'o', b'm',
-		];
+        let input = &[
+            0x00, 0x00, 0x00, 0x00,
+            b'a', b't', b'o', b'm',
+        ];
 
-		let expected = vec![
-			Atom {
-				name: [b'a', b't', b'o', b'm'],
-				payload: vec![],
-			}
-		];
+        let expected = vec![
+            Atom {
+                name: [b'a', b't', b'o', b'm'],
+                payload: vec![],
+            }
+        ];
 
-		assert_eq!(expected, Atom::parse(input, &[[b's', b'k', b'i', b'p']]).unwrap());
+        assert_eq!(expected, Atom::parse(input, &[[b's', b'k', b'i', b'p']]).unwrap());
     }
-    
+
     #[test]
     fn few_skips() {
-		let input = &[
-			0x00, 0x00, 0x00, 0x04,
-			b's', b'k', b'i', b'p',
-			0x01, 0x02, 0x03, 0x04,
-	    
-			0x00, 0x00, 0x00, 0x08,
-			b's', b'k', b'i', b'p',
-			0x11, 0x12, 0x13, 0x14,
-			0x15, 0x16, 0x17, 0x18,
-	    
-			0x00, 0x00, 0x00, 0x0C,
-			b's', b'k', b'i', b'p',
-			0x21, 0x22, 0x23, 0x24,
-			0x25, 0x26, 0x27, 0x28,
-			0x29, 0x2A, 0x2B, 0x2C,
-		];
+        let input = &[
+            0x00, 0x00, 0x00, 0x04,
+            b's', b'k', b'i', b'p',
+            0x01, 0x02, 0x03, 0x04,
 
-		let expected: Vec<Atom> = vec![];
+            0x00, 0x00, 0x00, 0x08,
+            b's', b'k', b'i', b'p',
+            0x11, 0x12, 0x13, 0x14,
+            0x15, 0x16, 0x17, 0x18,
 
-		assert_eq!(expected, Atom::parse(input, &[[b's', b'k', b'i', b'p']]).unwrap());
+            0x00, 0x00, 0x00, 0x0C,
+            b's', b'k', b'i', b'p',
+            0x21, 0x22, 0x23, 0x24,
+            0x25, 0x26, 0x27, 0x28,
+            0x29, 0x2A, 0x2B, 0x2C,
+        ];
+
+        let expected: Vec<Atom> = vec![];
+
+        assert_eq!(expected, Atom::parse(input, &[[b's', b'k', b'i', b'p']]).unwrap());
     }
-    
+
     #[test]
-    fn combined_test() {	
-		let input = &[
-			0x00, 0x00, 0x00, 0x04,
-			b'a', b't', b'o', b'm',
-			0x01, 0x02, 0x03, 0x04,
-	    
-			0x00, 0x00, 0x00, 0x00,
-			b'0', b'p', b'a', b'y',
-	    
+    fn combined_test() {
+        let input = &[
+            0x00, 0x00, 0x00, 0x04,
+            b'a', b't', b'o', b'm',
+            0x01, 0x02, 0x03, 0x04,
 
-			0x00, 0x00, 0x00, 0x06,
-			b's', b'k', b'i', b'p',
-			0x0A, 0x0B, 0x0C, 0x0D,
-			0x0E, 0x0F,
+            0x00, 0x00, 0x00, 0x00,
+            b'0', b'p', b'a', b'y',
 
-			0x00, 0x00, 0x00, 0x06,
-			b'm', b'e', b't', b'a',
-			0x0A, 0x0B, 0x0C, 0x0D,
-			0x0E, 0x0F
-		];
 
-	
-		let expected = vec![
-			Atom {
-			name: [b'a', b't', b'o', b'm'],
-			payload: vec![
-				0x01, 0x02, 0x03, 0x04,
-			],
-			},
-			Atom {
-				name: [b'0', b'p', b'a', b'y'],
-				payload: vec![],
-			},
-		];
+            0x00, 0x00, 0x00, 0x06,
+            b's', b'k', b'i', b'p',
+            0x0A, 0x0B, 0x0C, 0x0D,
+            0x0E, 0x0F,
 
-	
-		assert_eq!(expected, Atom::parse(
-			input, &[[b's', b'k', b'i', b'p'],  [b'm', b'e', b't', b'a']]
-		).unwrap());
+            0x00, 0x00, 0x00, 0x06,
+            b'm', b'e', b't', b'a',
+            0x0A, 0x0B, 0x0C, 0x0D,
+            0x0E, 0x0F
+        ];
+
+
+        let expected = vec![
+            Atom {
+                name: [b'a', b't', b'o', b'm'],
+                payload: vec![
+                    0x01, 0x02, 0x03, 0x04,
+                ],
+            },
+            Atom {
+                name: [b'0', b'p', b'a', b'y'],
+                payload: vec![],
+            },
+        ];
+
+
+        assert_eq!(expected, Atom::parse(
+            input, &[[b's', b'k', b'i', b'p'],  [b'm', b'e', b't', b'a']]
+        ).unwrap());
 
 
     }
 
     #[test]
     fn garbage_test() {
-		let input = &[
-			0x00, 0x00, 0x00, 0x04,
-			b'a', b't', b'o', b'm',
-			0x01, 0x02, 0x03, 0x04,
-			0x0A
-		];
-	
-		assert!(Atom::parse(input, &[[b's', b'k', b'i', b'p']]).is_err());
+        let input = &[
+            0x00, 0x00, 0x00, 0x04,
+            b'a', b't', b'o', b'm',
+            0x01, 0x02, 0x03, 0x04,
+            0x0A
+        ];
+
+        assert!(Atom::parse(input, &[[b's', b'k', b'i', b'p']]).is_err());
     }
 
     #[test]
     fn many_skip_types() {
-		let input = &[
-			0x00, 0x00, 0x00, 0x04,
-			b'm', b'e', b't', b'a',
-			0x01, 0x02, 0x03, 0x04,
+        let input = &[
+            0x00, 0x00, 0x00, 0x04,
+            b'm', b'e', b't', b'a',
+            0x01, 0x02, 0x03, 0x04,
 
-			0x00, 0x00, 0x00, 0x04,
-			b's', b'k', b'i', b'p',
-			0x01, 0x02, 0x03, 0x04,
+            0x00, 0x00, 0x00, 0x04,
+            b's', b'k', b'i', b'p',
+            0x01, 0x02, 0x03, 0x04,
 
-			0x00, 0x00, 0x00, 0x04,
-			b'a', b't', b'o', b'm',
-			0x0A, 0x0B, 0x0C, 0x0D,
-		];
+            0x00, 0x00, 0x00, 0x04,
+            b'a', b't', b'o', b'm',
+            0x0A, 0x0B, 0x0C, 0x0D,
+        ];
 
-		let expected = vec![
-			Atom {
-				name: [b'a', b't', b'o', b'm'],
-				payload: vec![
-					0x0A, 0x0B, 0x0C, 0x0D,
-				],
-			},
-		];
+        let expected = vec![
+            Atom {
+                name: [b'a', b't', b'o', b'm'],
+                payload: vec![
+                    0x0A, 0x0B, 0x0C, 0x0D,
+                ],
+            },
+        ];
 
-		assert_eq!(expected, Atom::parse(
-			input, &[[b's', b'k', b'i', b'p'], [b'm', b'e', b't', b'a']]
-		).unwrap());
+        assert_eq!(expected, Atom::parse(
+            input, &[[b's', b'k', b'i', b'p'], [b'm', b'e', b't', b'a']]
+        ).unwrap());
     }
 
     #[test]
     fn no_skip_provided() {
-		let input = &[
-			0x00, 0x00, 0x00, 0x04,
-			b's', b'k', b'i', b'p',
-			0x01, 0x02, 0x03, 0x04,
+        let input = &[
+            0x00, 0x00, 0x00, 0x04,
+            b's', b'k', b'i', b'p',
+            0x01, 0x02, 0x03, 0x04,
 
-			0x00, 0x00, 0x00, 0x04,
-			b'a', b't', b'o', b'm',
-			0x0A, 0x0B, 0x0C, 0x0D,
-		];
+            0x00, 0x00, 0x00, 0x04,
+            b'a', b't', b'o', b'm',
+            0x0A, 0x0B, 0x0C, 0x0D,
+        ];
 
-		let expected = vec![
-			Atom {
-				name: [b's', b'k', b'i', b'p'],
-				payload: vec![
-					0x01, 0x02, 0x03, 0x04,
-				],
-			},
-			Atom {
-				name: [b'a', b't', b'o', b'm'],
-				payload: vec![
-					0x0A, 0x0B, 0x0C, 0x0D,
-				],
-			},
-		];
+        let expected = vec![
+            Atom {
+                name: [b's', b'k', b'i', b'p'],
+                payload: vec![
+                    0x01, 0x02, 0x03, 0x04,
+                ],
+            },
+            Atom {
+                name: [b'a', b't', b'o', b'm'],
+                payload: vec![
+                    0x0A, 0x0B, 0x0C, 0x0D,
+                ],
+            },
+        ];
 
-		assert_eq!(expected, Atom::parse(input, &[]).unwrap());
+        assert_eq!(expected, Atom::parse(input, &[]).unwrap());
     }
 }
