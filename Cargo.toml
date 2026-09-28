@@ -1,6 +1,10 @@
 [package]
 name = "atomic_parser"
+<<<<<<< HEAD
 version = "1.1.0"
+=======
+version = "0.1.0"
+>>>>>>> origin/main
 edition = "2024"
 description = "A rust crate to parse a file made up of atoms"
 repository = "https://github.com/ACatCoder-builds/atomic-parser"
@@ -8,11 +12,14 @@ documentation = "https://acatcoder-builds.github.io/web/docs/atomic_parser/atomi
 license = "Apache-2.0"
 keywords = ["atoms", "file", "parser"]
 categories = ["parsing"]
+<<<<<<< HEAD
 readme = "README.txt"
 
 [features]
 default = ["read"]
 read = []
 write = []
+=======
+>>>>>>> origin/main
 
 [lib]
