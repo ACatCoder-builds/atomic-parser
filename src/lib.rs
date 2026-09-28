@@ -122,8 +122,20 @@
 //! println!("{:#?}", bytes);
 //!
 //! ```
+//!
+//! # Features
+//!
+//! As noted previously, this crate has 2 features:
+//!
+//! * `read` (on by default): This feature allows
+//! parsing files.
+//!
+//! * `write`: This feature allows turning atoms
+//! back into raw bytes.
+
 
 use std::fmt;
+use std::error;
 
 #[derive(PartialEq, Debug, Clone, Hash)]
 /// A parsed atom.
@@ -150,6 +162,8 @@ pub enum AtomErrorKind {
     /// usually caused by size headers being wrong.
     MalformedAtom,
 }
+
+impl error::Error for AtomError {}
 
 impl Atom {
     /// Creates new atom with name and payload.
