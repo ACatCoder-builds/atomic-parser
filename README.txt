@@ -1,0 +1,3 @@
+A parse crate that can parse a file built up into atoms.
+
+For more info, read the documentation: https://acatcoder-builds.github.io/web/docs/atomic_parser/atomic_parser/index.html
