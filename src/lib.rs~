@@ -33,13 +33,13 @@
 //!
 //! # Example
 //!
-//! ## Parsing atoms
+//! ## Parsing atoms.
 //!
 //! Make sure you have the `read` feature enabled, though
 //! it is enabled by default.
 //!
 //! Minimal example:
-//! ```ignore
+//! ```
 //! use std::fs::File;
 //! use std::io::Read;
 //! use atomic_parser::Atom;
@@ -50,7 +50,7 @@
 //! println!("{:?}", Atom::parse(&value, &[]).expect("Atoms are incorrect"));
 //! ```
 //! Or, if we want to ignore `skip` atoms:
-//! ```ignore
+//! ```
 //! use std::fs::File;
 //! use std::io::Read;
 //! use atomic_parser::Atom;
@@ -61,7 +61,7 @@
 //! println!("{:?}", Atom::parse(&value, &[[b's', b'k', b'i', b'p']]).expect("Atoms are incorrect"));
 //! ```
 //! We can also ignore multiple atoms, e.g. a `skip` and a `meta` atom:
-//! ```ignore
+//! ```
 //! use std::fs::File;
 //! use std::io::Read;
 //! use atomic_parser::Atom;
@@ -72,7 +72,7 @@
 //! println!("{:?}", Atom::parse(&value, &[[b's', b'k', b'i', b'p'], [b'm', b'e', b't', b'a']]).expect("Atoms are incorrect"));
 //! ```
 //!
-//! ## Building atoms
+//! ## Building atoms:
 //!
 //! Make sure you have the `write` feature enable.
 //! Run:
@@ -89,33 +89,33 @@
 //!     Atom {
 //!         name: [b'a', b't', b'0', b'1'],
 //!         payload: vec![
-//!             0x01, 0x02, 0x03, 0x04,
+//!		       0x01, 0x02, 0x03, 0x04,
 //!         ],
-//!     },
-//!     Atom {
+//!	    },
+//!	    Atom {
 //!         name: [b'a', b't', b'0', b'2'],
 //!         payload: vec![
-//!            0x01, 0x02, 0x03, 0x04,
+//!		       0x01, 0x02, 0x03, 0x04,
 //!         ],
-//!     },
-//!     Atom {
+//!	   },
+//!	    Atom {
 //!         name: [b'a', b't', b'0', b'3'],
 //!         payload: vec![
-//!             0x01, 0x02, 0x03, 0x04,
+//!		       0x01, 0x02, 0x03, 0x04,
 //!         ],
-//!     },
-//!     Atom {
+//!	    },
+//!	    Atom {
 //!         name: [b'a', b't', b'0', b'4'],
 //!         payload: vec![
-//!             0x01, 0x02, 0x03, 0x04,
+//!	    	   0x01, 0x02, 0x03, 0x04,
 //!         ],
-//!     },
-//!     Atom {
+//!	    },
+//!	    Atom {
 //!         name: [b'a', b't', b'0', b'5'],
 //!         payload: vec![
-//!             0x01, 0x02, 0x03, 0x04,
+//!		       0x01, 0x02, 0x03, 0x04,
 //!         ],
-//!     }
+//!	   }
 //! ];
 //!
 //! let bytes = atoms_into_bytes(input);
@@ -153,38 +153,21 @@ pub enum AtomErrorKind {
 
 impl Atom {
     /// Creates new atom with name and payload.
-    #[must_use]
     pub fn new(name: [u8; 4], payload: Vec<u8>) -> Atom {
-        Atom {
-            name,
-            payload
-        }
+	Atom {
+	    name,
+	    payload
+	}
     }
 
     /// Creates a new empty atom.
-    #[must_use]
     pub fn empty(name: [u8; 4]) -> Atom {
-        Atom {
-            name,
-            payload: vec![],
-        }
+	Atom {
+	    name,
+	    payload: vec![],
+	}
     }
-
-    /// Creates an atom from a `&str`.
-    ///
-    /// The function returns a `None` if the
-    /// name is a &str that is not exactly 4 bytes.
-    #[must_use]
-    pub fn from_str(name: &str, payload: &str) -> Option<Atom> {
-        let name: [u8; 4] = name.as_bytes().try_into().ok()?;
-        let payload = payload.as_bytes().to_vec();
-
-        Some(Atom {
-            name,
-            payload
-        })
-    }
-
+    
     /// Parse an input into atoms.
     ///
     /// Uses the syntax
@@ -281,32 +264,24 @@ impl Atom {
         Ok(atoms)
     }
 
-    /// Converts the atom into a vector
-    /// of bytes that the parser would
-    /// parse into the same aton,
-    ///
-    /// *NOTE*: Available on crate feature
-    /// `write` only!
+    /// Converts the atom into a byte.
     #[cfg(feature = "write")]
     pub fn into_bytes(&self) -> Vec<u8> {
-        [
-            &(self.payload.len() as u32).to_be_bytes(),
-            &self.name,
-            self.payload.as_slice(),
-        ].concat()
+	[
+	    &(self.payload.len() as u32).to_be_bytes(),
+	    &self.name,
+	    self.payload.as_slice(),
+	].concat()
     }
 }
 
 
 /// Turns a vector of atoms into a vector of bytes.
-///
-/// *NOTE*: Available on crate feature
-/// `write` only!
 #[cfg(feature = "write")]
 pub fn atoms_into_bytes(items: Vec<Atom>) -> Vec<u8> {
     let mut output = vec![];
     for i in items {
-        output = [output, i.into_bytes()].concat();
+	output = [output, i.into_bytes()].concat();
     }
 
     output
@@ -314,17 +289,17 @@ pub fn atoms_into_bytes(items: Vec<Atom>) -> Vec<u8> {
 
 impl fmt::Display for AtomError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "error at {}: {} ", self.idx, self.kind)
+	write!(f, "error at {}: {} ", self.idx, self.kind)
     }
 }
 
 impl fmt::Display for AtomErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            AtomErrorKind::MalformedAtom => write!(f, "Some atom's size header may be incorrect, as the input ends before the atom ends.")
-        }
+	match self {
+	    AtomErrorKind::MalformedAtom => write!(f, "Some atom's size header may be incorrect, as the input ends before the atom ends.")
+	}
     }
 }
 
 #[cfg(test)]
-mod tests;
+mod tests; 

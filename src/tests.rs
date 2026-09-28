@@ -314,10 +314,10 @@ fn atom_into_bytes() {
             0x01, 0x02, 0x03, 0x04,
         ],
     };
-    
+
 
     let expected = vec![
-	0x00, 0x00, 0x00, 0x04,
+        0x00, 0x00, 0x00, 0x04,
         b'a', b't', b'0', b'1',
         0x01, 0x02, 0x03, 0x04,
     ];
@@ -333,10 +333,10 @@ fn one_atom_into_byte() {
             0x01, 0x02, 0x03, 0x04,
         ],
     }];
-    
+
 
     let expected = vec![
-	0x00, 0x00, 0x00, 0x04,
+        0x00, 0x00, 0x00, 0x04,
         b'a', b't', b'0', b'1',
         0x01, 0x02, 0x03, 0x04,
     ];
@@ -347,57 +347,57 @@ fn one_atom_into_byte() {
 #[test]
 fn few_atom_into_byte() {
     let input = vec![
-	Atom {
+        Atom {
             name: [b'a', b't', b'0', b'1'],
             payload: vec![
-		0x01, 0x02, 0x03, 0x04,
+                0x01, 0x02, 0x03, 0x04,
             ],
-	},
-	Atom {
+        },
+        Atom {
             name: [b'a', b't', b'0', b'2'],
             payload: vec![
-		0x01, 0x02, 0x03, 0x04,
+                0x01, 0x02, 0x03, 0x04,
             ],
-	},
-	Atom {
+        },
+        Atom {
             name: [b'a', b't', b'0', b'3'],
             payload: vec![
-		0x01, 0x02, 0x03, 0x04,
+                0x01, 0x02, 0x03, 0x04,
             ],
-	},
-	Atom {
+        },
+        Atom {
             name: [b'a', b't', b'0', b'4'],
             payload: vec![
-		0x01, 0x02, 0x03, 0x04,
+                0x01, 0x02, 0x03, 0x04,
             ],
-	},
-	Atom {
+        },
+        Atom {
             name: [b'a', b't', b'0', b'5'],
             payload: vec![
-		0x01, 0x02, 0x03, 0x04,
+                0x01, 0x02, 0x03, 0x04,
             ],
-	}
+        }
     ];
-    
+
 
     let expected = vec![
-	0x00, 0x00, 0x00, 0x04,
+        0x00, 0x00, 0x00, 0x04,
         b'a', b't', b'0', b'1',
         0x01, 0x02, 0x03, 0x04,
 
-	0x00, 0x00, 0x00, 0x04,
+        0x00, 0x00, 0x00, 0x04,
         b'a', b't', b'0', b'2',
         0x01, 0x02, 0x03, 0x04,
 
-	0x00, 0x00, 0x00, 0x04,
+        0x00, 0x00, 0x00, 0x04,
         b'a', b't', b'0', b'3',
         0x01, 0x02, 0x03, 0x04,
 
-	0x00, 0x00, 0x00, 0x04,
+        0x00, 0x00, 0x00, 0x04,
         b'a', b't', b'0', b'4',
         0x01, 0x02, 0x03, 0x04,
 
-	0x00, 0x00, 0x00, 0x04,
+        0x00, 0x00, 0x00, 0x04,
         b'a', b't', b'0', b'5',
         0x01, 0x02, 0x03, 0x04,
     ];
@@ -408,10 +408,10 @@ fn few_atom_into_byte() {
 #[test]
 fn from_str_test() {
     let expected = Atom {
-	name: [b'a', b't', b'o', b'm'],
-	payload: vec![
-	    b'p', b'a', b'y', b'l', b'o', b'a', b'd',
-	],
+        name: [b'a', b't', b'o', b'm'],
+        payload: vec![
+            b'p', b'a', b'y', b'l', b'o', b'a', b'd',
+        ],
     };
 
     assert_eq!(Some(expected), Atom::from_str("atom", "payload"));
